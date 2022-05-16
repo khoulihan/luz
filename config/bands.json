@@ -1,0 +1,61 @@
+{
+  "rates": {
+    "off-peak": {
+      "name": "Off-Peak",
+      "colour": "#35e679",
+      "energy_rate": 0.190111
+    },
+    "mid-peak": {
+      "name": "Mid-Peak",
+      "colour": "#e57835",
+      "energy_rate": 0.229623
+    },
+    "peak": {
+      "name": "Peak",
+      "colour": "#e63535",
+      "energy_rate": 0.287555
+    }
+  },
+  "schedules": {
+    "weekday": [
+      {
+        "start": 0,
+        "end": 8,
+        "rate": "off-peak"
+      },
+      {
+        "start": 8,
+        "end": 10,
+        "rate": "mid-peak"
+      },
+      {
+        "start": 10,
+        "end": 14,
+        "rate": "peak"
+      },
+      {
+        "start": 14,
+        "end": 18,
+        "rate": "mid-peak"
+      },
+      {
+        "start": 18,
+        "end": 22,
+        "rate": "peak"
+      },
+      {
+        "start": 22,
+        "end": 24,
+        "rate": "mid-peak"
+      }
+    ],
+    "weekend": [
+      {
+        "start": 0,
+        "end": 24,
+        "rate": "off-peak"
+      }
+    ]
+  },
+
+}
