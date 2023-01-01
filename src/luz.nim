@@ -8,7 +8,7 @@ const doc = """
 Luz.
 
 Usage:
-  luz [--chart] [--add-hours=<hours>] [--bands=<file>]
+  luz [--chart] [--conky] [--add-hours=<hours>] [--bands=<file>]
   luz edit [--bands=<file>]
   luz (-h | --help)
   luz --version
@@ -17,6 +17,7 @@ Options:
   -h --help             Show this screen.
   --version             Show version.
   --chart               Show a chart of today's rate bands.
+  --conky               Produce output for display in conky
   --add-hours=<hours>   Add the specified number of hours to the current time
   --bands=<file>        Read the band information from a file other than the default
 """
@@ -178,19 +179,51 @@ template getEndOfRate(
   )
 
 
+proc DisplayCurrentStatusOnTerminal(
+    currentBand: Band,
+    currentBandEnd: DateTime,
+    remaining: Duration,
+    remainingMinutes: int64
+  ) =
+  styledEcho "Current rate: ", ansiForegroundColorCode(currentBand.rate.colour), &"{currentBand.rate.name}"
+  styledEcho "Ends at ", fgCyan, &"{currentBandEnd:HH:mm} on {currentBandEnd:dddd dd/MM}"
+  styledEcho "Time remaining: ", fgCyan, &"{remaining.inHours} hours, {remainingMinutes} minutes"
+
+
+proc OutputCurrentStatusConky(
+    currentBand: Band,
+    currentBandEnd: DateTime,
+    remaining: Duration,
+    remainingMinutes: int64
+  ) =
+  # TODO: This should accept some sort of template or something!
+  stdout.writeLine &"${{color {currentBand.rate.colour}}}${{font FiraCode Nerd Font:size= 12}}    ${{color #abb2bf}}${{font DejaVu Sans:size= 12}}{remaining.inHours}:{remainingMinutes:02} remaining"
+
+
 proc displayCurrentStatus(
     currentBand: Band,
     currentBandEnd: DateTime,
-    currentTime: DateTime
+    currentTime: DateTime,
+    conky: bool
   ) =
 
   let remaining = currentBandEnd - currentTime
   let remainingMinutes = remaining.inMinutes - (remaining.inHours * 60)
 
-  styledEcho "Current rate: ", ansiForegroundColorCode(currentBand.rate.colour), &"{currentBand.rate.name}"
-  styledEcho "Ends at ", fgCyan, &"{currentBandEnd:HH:mm} on {currentBandEnd:dddd dd/MM}"
-  styledEcho "Time remaining: ", fgCyan, &"{remaining.inHours} hours, {remainingMinutes} minutes"
-
+  if not conky:
+    DisplayCurrentStatusOnTerminal(
+      currentBand,
+      currentBandEnd,
+      remaining,
+      remainingMinutes
+    )
+  else:
+    OutputCurrentStatusConky(
+      currentBand,
+      currentBandEnd,
+      remaining,
+      remainingMinutes
+    )
 
 proc displayChart(schedule: Schedule, currentBand: Band, currentTime: DateTime) =
   echo()
@@ -202,7 +235,12 @@ proc displayChart(schedule: Schedule, currentBand: Band, currentTime: DateTime) 
       styledEcho ansiForegroundColorCode(band.rate.colour), &"{hourIndicator}████", currentIndicator
 
 
-proc handleDisplayCurrentCommand(bandsFile: string, add: int = 0, chart: bool = false) =
+proc handleDisplayCurrentCommand(
+  bandsFile: string,
+  add: int = 0,
+  chart: bool = false,
+  conky: bool = false
+) =
   ## Handle the default command, which is to display the current status
   ## (and maybe a chart of the current day as well)
 
@@ -215,10 +253,11 @@ proc handleDisplayCurrentCommand(bandsFile: string, add: int = 0, chart: bool = 
   displayCurrentStatus(
     currentBand,
     currentBandEnd,
-    currentTime
+    currentTime,
+    conky
   )
 
-  if chart:
+  if chart and not conky:
     displayChart(schedules.getSchedule(currentTime), currentBand, currentTime)
 
 
@@ -255,5 +294,6 @@ when isMainModule:
     handleDisplayCurrentCommand(
       bandsFile,
       if args["--add-hours"]: parseInt($args["--add-hours"]) else: 0,
-      args["--chart"]
+      args["--chart"],
+      args["--conky"]
     )
